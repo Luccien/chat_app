@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 final _firebase = FirebaseAuth.instance;
 
-
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -14,38 +13,40 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  final _form = GlobalKey<FormState>();
+
   var _isLogin = true;
   var _enteredEmail = '';
   var _enteredPassword = '';
 
-  final _form = GlobalKey<FormState>();
-
-  void _submit() {
+  void _submit() async {
     final isValid = _form.currentState!.validate();
-
-
-
 
     if (!isValid) {
       return;
     }
-_form.currentState!.save();
-if(_isLogin){
-  // log users in
-}else{
 
-  try{
-  final userCredentials = await _firebase.createUserWithEmailAndPassword(email: _enteredEmail, password: _enteredPassword);
-}on FirebaseAuthException catch (error){
-  if(error.code == 'email-already-in-use'){}
-}
-ScaffoldMessenger.of(context).clearSnackBars();
-ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-  content: Text(error.message ?? 'Authentication failed.'),
-  ),);
-}
+    _form.currentState!.save();
 
-    
+    if (_isLogin) {
+      // log users in
+    } else {
+      try {
+        final userCredentials = await _firebase.createUserWithEmailAndPassword(
+            email: _enteredEmail, password: _enteredPassword);
+        print(userCredentials);
+      } on FirebaseAuthException catch (error) {
+        if (error.code == 'email-already-in-use') {
+          // ...
+        }
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.message ?? 'Authentication failed.'),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -87,8 +88,9 @@ ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                               if (value == null ||
                                   value.trim().isEmpty ||
                                   !value.contains('@')) {
-                                return 'Please enter a valid email address. ';
+                                return 'Please enter a valid email address.';
                               }
+
                               return null;
                             },
                             onSaved: (value) {
@@ -101,7 +103,7 @@ ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             obscureText: true,
                             validator: (value) {
                               if (value == null || value.trim().length < 6) {
-                                return 'Password must be at least 6 characters long. ';
+                                return 'Password must be at least 6 characters long.';
                               }
                               return null;
                             },
@@ -113,10 +115,10 @@ ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                           ElevatedButton(
                             onPressed: _submit,
                             style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.onSecondary
-                                //.primaryContainer,
-                                ),
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
+                            ),
                             child: Text(_isLogin ? 'Login' : 'Signup'),
                           ),
                           TextButton(
