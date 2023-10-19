@@ -1,8 +1,4 @@
-import 'dart:io';
-
-import 'package:chat_app/widgets/user_image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -24,13 +20,12 @@ class _AuthScreenState extends State<AuthScreen> {
   var _enteredEmail = '';
   var _enteredPassword = '';
   var _enteredUsername = '';
-  File? _selectedImage;
   var _isAuthenticating = false;
 
   void _submit() async {
     final isValid = _form.currentState!.validate();
 
-    if (!isValid || !_isLogin && _selectedImage == null) {
+    if (!isValid) {
       // show error message ...
       return;
     }
@@ -48,21 +43,12 @@ class _AuthScreenState extends State<AuthScreen> {
         final userCredentials = await _firebase.createUserWithEmailAndPassword(
             email: _enteredEmail, password: _enteredPassword);
 
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('user_images')
-            .child('${userCredentials.user!.uid}.jpg');
-
-        await storageRef.putFile(_selectedImage!);
-        final imageUrl = await storageRef.getDownloadURL();
-
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userCredentials.user!.uid)
             .set({
           'username': _enteredUsername,
           'email': _enteredEmail,
-          'image_url': imageUrl,
         });
       }
     } on FirebaseAuthException catch (error) {
@@ -108,9 +94,19 @@ class _AuthScreenState extends State<AuthScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (!_isLogin)
-                            UserImagePicker(
-                              onPickImage: (pickedImage) {
-                                _selectedImage = pickedImage;
+                            TextFormField(
+                              decoration:
+                                  const InputDecoration(labelText: 'Username'),
+                              autocorrect: false,
+                              textCapitalization: TextCapitalization.words,
+                              validator: (value) {
+                                if (value == null || value.trim().length < 4) {
+                                  return 'Username must be at least 4 characters long.';
+                                }
+                                return null;
+                              },
+                              onSaved: (value) {
+                                _enteredUsername = value!;
                               },
                             ),
                           TextFormField(
@@ -125,30 +121,12 @@ class _AuthScreenState extends State<AuthScreen> {
                                   !value.contains('@')) {
                                 return 'Please enter a valid email address.';
                               }
-
                               return null;
                             },
                             onSaved: (value) {
                               _enteredEmail = value!;
                             },
                           ),
-                          if (!_isLogin)
-                            TextFormField(
-                              decoration:
-                                  const InputDecoration(labelText: 'Username'),
-                              enableSuggestions: false,
-                              validator: (value) {
-                                if (value == null ||
-                                    value.isEmpty ||
-                                    value.trim().length < 4) {
-                                  return 'Please enter at least 4 characters.';
-                                }
-                                return null;
-                              },
-                              onSaved: (value) {
-                                _enteredUsername = value!;
-                              },
-                            ),
                           TextFormField(
                             decoration:
                                 const InputDecoration(labelText: 'Password'),
